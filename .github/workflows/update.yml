@@ -1,0 +1,116 @@
+name: Auto-update Miniconda3 package
+
+# Checks daily for a new Miniconda3 Windows x86_64 installer on the
+# repo.anaconda.com index, and if found: updates the package files, packs,
+# pushes to the Chocolatey community feed, and commits the bump back.
+#
+# Requires one repository secret: CHOCO_API_KEY (your push API key from
+# https://community.chocolatey.org/account).
+
+on:
+  schedule:
+    - cron: '0 7 * * *'    # daily at 07:00 UTC
+  workflow_dispatch: {}     # allow manual runs from the Actions tab
+
+jobs:
+  update:
+    runs-on: windows-latest
+    permissions:
+      contents: write       # to commit the version bump back
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Update and pack if a new version exists
+        id: update
+        shell: pwsh
+        run: |
+          ./update.ps1
+          $changed = -not [string]::IsNullOrWhiteSpace((git status --porcelain -- miniconda3.nuspec tools/chocolateyinstall.ps1 tools/VERIFICATION.txt))
+          $v = ([xml](Get-Content miniconda3.nuspec)).package.metadata.version
+          "changed=$($changed.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Commit the version bump back to the repo
+        if: steps.update.outputs.changed == 'true'
+        shell: pwsh
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add miniconda3.nuspec tools/chocolateyinstall.ps1 tools/VERIFICATION.txt
+          git commit -m "Update Miniconda3 to $env:MINICONDA_VERSION"
+          # A re-run checks out the original head SHA, so master can already carry
+          # this bump from the first attempt. Rebase before pushing.
+          git pull --rebase
+          git push
+        env:
+          MINICONDA_VERSION: ${{ steps.update.outputs.version }}
+
+      - name: Push package to Chocolatey
+        # Deliberately not gated on 'changed': the commit step is what makes
+        # 'changed' false on the next run, so a push lost to a feed outage would
+        # never be retried. The feed itself is the source of truth here.
+        if: always() && steps.update.outputs.version != ''
+        shell: pwsh
+        env:
+          CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
+          MINICONDA_VERSION: ${{ steps.update.outputs.version }}
+          CHANGED: ${{ steps.update.outputs.changed }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CHOCO_API_KEY)) {
+              throw "CHOCO_API_KEY repository secret is not set."
+          }
+          $v = $env:MINICONDA_VERSION
+
+          # Exact id+version resolves versions the listing endpoints hide, including
+          # ones still under moderation, so this answers "is it already published?"
+          # rather than merely "is it approved?". The feed 503s often enough that
+          # 'unknown' has to be a distinct answer from 'absent'.
+          function Get-FeedState {
+              param([string]$Version)
+              $u = "https://community.chocolatey.org/api/v2/Packages(Id='miniconda3',Version='$Version')"
+              try {
+                  Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 30 | Out-Null
+                  return 'present'
+              } catch {
+                  $code = 0
+                  if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
+                  if ($code -eq 404) { return 'absent' }
+                  Write-Warning "Feed probe for miniconda3 $Version returned $code."
+                  return 'unknown'
+              }
+          }
+
+          $state = Get-FeedState $v
+          if ($state -eq 'present') {
+              Write-Host "miniconda3 $v is already on the feed. Nothing to push."
+              exit 0
+          }
+          if ($state -eq 'unknown' -and $env:CHANGED -ne 'true') {
+              # The feed could not confirm, and this run changed nothing, so pushing
+              # would risk a duplicate. Leave it: the next run re-checks.
+              Write-Host "Feed did not answer and this run changed nothing. Skipping."
+              exit 0
+          }
+
+          $nupkg = "miniconda3.$v.nupkg"
+          if (-not (Test-Path $nupkg)) { throw "Missing package artifact: $nupkg" }
+
+          # push.chocolatey.org returns a transient 503 often enough to matter.
+          Write-Host "Pushing $nupkg ..."
+          foreach ($attempt in 1..3) {
+              choco push $nupkg --source https://push.chocolatey.org/ --api-key $env:CHOCO_API_KEY
+              if ($LASTEXITCODE -eq 0) { break }
+              # A 409 from a duplicate push is indistinguishable from a real failure
+              # by exit code, so re-probe instead of parsing choco's output.
+              if ((Get-FeedState $v) -eq 'present') {
+                  Write-Host "$v is on the feed; that push was a duplicate. Treating as published."
+                  exit 0
+              }
+              if ($attempt -lt 3) {
+                  Write-Host "Push attempt $attempt failed. Retrying in 60s ..."
+                  Start-Sleep -Seconds 60
+              }
+          }
+          if ($LASTEXITCODE -ne 0) {
+              throw "choco push failed 3 times. Check that CHOCO_API_KEY belongs to a Chocolatey account listed as a maintainer of package id 'miniconda3'. A transient failure needs no action: the next scheduled run re-pushes, because the feed check drives the push rather than the file diff."
+          }

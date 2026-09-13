@@ -1,0 +1,29 @@
+name: Publish current version
+
+# Manual one-shot: pack the package at its current nuspec version and push it to
+# the Chocolatey community feed. Use for the initial publish (the auto-update
+# workflow only pushes when a NEW upstream version appears) or to re-push the
+# same version during moderation. Needs the CHOCO_API_KEY repository secret.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Pack and push the current version
+        shell: pwsh
+        env:
+          CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
+        run: |
+          $v = ([xml](Get-Content miniconda3.nuspec)).package.metadata.version
+          Write-Host "Packing miniconda3 $v ..."
+          choco pack miniconda3.nuspec --out .
+          if ($LASTEXITCODE -ne 0) { throw "choco pack failed." }
+          Write-Host "Pushing miniconda3.$v.nupkg ..."
+          choco push "miniconda3.$v.nupkg" --source https://push.chocolatey.org/ --api-key $env:CHOCO_API_KEY
+          if ($LASTEXITCODE -ne 0) { throw "choco push failed." }
+          Write-Host "Pushed miniconda3 $v. It now enters Chocolatey moderation."

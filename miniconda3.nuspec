@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>miniconda3</id>
+    <version>26.7.1.1</version>
+    <title>Miniconda (Python 3.13)</title>
+    <authors>Anaconda, Inc.</authors>
+    <owners>chaliy, Lite, MHutatah</owners>
+    <projectUrl>https://www.anaconda.com/docs/getting-started/miniconda/main</projectUrl>
+    <packageSourceUrl>https://github.com/MHutatah/chocolatey-miniconda3</packageSourceUrl>
+    <projectSourceUrl>https://github.com/conda/conda</projectSourceUrl>
+    <docsUrl>https://www.anaconda.com/docs/getting-started/miniconda/install</docsUrl>
+    <bugTrackerUrl>https://github.com/MHutatah/chocolatey-miniconda3/issues</bugTrackerUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/MHutatah/chocolatey-miniconda3@master/icon.png</iconUrl>
+    <licenseUrl>https://github.com/conda/conda/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <copyright>Copyright (c) Anaconda, Inc.</copyright>
+    <releaseNotes>https://github.com/conda/conda/blob/main/CHANGELOG.md</releaseNotes>
+    <summary>Conda is a cross-platform, Python-agnostic binary package manager. It is the package manager used by Anaconda installations, but it may be used for other systems as well. Conda makes environments first-class citizens, making it easy to create independent environments even for C libraries. Conda is written entirely in Python, and is BSD licensed open source.</summary>
+    <description>
+**This is a community-maintained package.** It is not maintained by or affiliated with Anaconda, Inc.
+
+Conda is a cross-platform, Python-agnostic binary package manager. Miniconda is the minimal distribution that ships conda and Python and nothing else, so you build the environment you want rather than removing what you do not.
+
+This package downloads Anaconda's official Windows x86_64 installer at install time directly from repo.anaconda.com, verifies it against the SHA256 Anaconda publishes beside the file, and installs it silently.
+
+By default, this installation:
+
+  * will not add miniconda python to path,
+  * will register miniconda python as the default python3
+  * will install for all users
+  * will install in your `$ToolsDir\miniconda3` (`$ToolsDir` is the path returned by `Get-ToolsLocation`) default is `C:\Tools\`
+
+You can provide parameters for the install. Example: `choco install miniconda3 --params="'/AddToPath:1'"`
+
+  * /InstallationType:[AllUsers|JustMe]
+  * /AddToPath:[0|1]
+  * /RegisterPython:[0|1]
+  * /D:(installation path)
+  * /Force
+
+**Upgrading replaces the installation.** Miniconda's installer will not write over an existing one, so an upgrade removes it first. If the installation directory contains conda environments they would go with it, so the upgrade stops and lists them instead. Export or move those environments, or pass `/Force` to upgrade anyway. Environments kept outside the installation directory are unaffected.
+
+This package tracks the Python 3.13 series. Anaconda publishes a separate Windows installer per Python series, so the package follows one deliberately rather than whichever was built most recently. Windows builds are 64-bit only; 32-bit was dropped upstream after 4.12.0.
+    </description>
+    <tags>conda anaconda miniconda python miniconda3</tags>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

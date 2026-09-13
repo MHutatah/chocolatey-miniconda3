@@ -1,0 +1,49 @@
+VERIFICATION
+------------
+
+This package is a community-maintained package. It is not maintained by,
+endorsed by, or affiliated with Anaconda, Inc.
+
+The Miniconda3 installer is NOT bundled in this package. It is downloaded at
+install time directly from Anaconda's official distribution host:
+
+  https://repo.anaconda.com/miniconda/Miniconda3-py313_26.7.1-1-Windows-x86_64.exe
+
+SHA256 checksum (also embedded in tools\chocolateyinstall.ps1):
+
+  ff485c617e0e15addc111aa1caa206679e214d223624297bf8aa0bc726ed67bd
+
+This is the exact checksum Anaconda publishes beside the file in the installer
+index at:
+
+  https://repo.anaconda.com/miniconda/
+
+To verify, download the installer above and compare its hash:
+
+  PS> (Get-FileHash -Algorithm SHA256 .\Miniconda3-py313_26.7.1-1-Windows-x86_64.exe).Hash
+
+
+PYTHON SERIES
+-------------
+
+Anaconda publishes a separate Windows installer for each Python series, py310
+through py314 at the time of writing, rather than a single "latest". This
+package deliberately follows one series. The series it tracks is set at the top
+of update.ps1 in the package source repository.
+
+
+LICENSE
+-------
+
+Miniconda is a distribution of conda, which is open source and released under
+the 3-clause BSD license:
+
+  https://github.com/conda/conda/blob/main/LICENSE
+
+Use of the installer and of the packages Anaconda hosts is additionally subject
+to Anaconda's terms of service:
+
+  https://legal.anaconda.com/policies/en/
+
+This package only automates the download and silent installation of Anaconda's
+official installer; it does not modify or redistribute it.
