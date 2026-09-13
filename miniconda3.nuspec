@@ -46,6 +46,7 @@ This package tracks the Python 3.13 series. Anaconda publishes a separate Window
     <tags>conda anaconda miniconda python miniconda3</tags>
   </metadata>
   <files>
-    <file src="tools\**" target="tools" />
+    <!-- Test-*.ps1 are development scripts for this repo, not for end users. -->
+    <file src="tools\**" target="tools" exclude="**\Test-*.ps1" />
   </files>
 </package>

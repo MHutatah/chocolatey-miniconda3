@@ -80,12 +80,20 @@ if (Test-Path -LiteralPath $existing) {
     Uninstall-ChocolateyPackage -PackageName 'miniconda3' -FileType 'exe' `
                                 -SilentArgs '/S' -File $existing -ValidExitCodes @(0)
 
-    # The NSIS uninstaller returns before the tree is actually gone, and the
-    # installer needs it gone.
-    $deadline = (Get-Date).AddSeconds(180)
-    while ((Test-Path -LiteralPath $existing) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
-    if (Test-Path -LiteralPath $existing) {
-        throw "Timed out waiting for the existing Miniconda3 at $D to be removed."
+    # The NSIS uninstaller returns before the tree is actually gone, and on a
+    # large installation it keeps working for minutes afterwards.
+    #
+    # Never throw past this point. The installation has already been removed, so
+    # aborting here leaves the machine with no Miniconda at all, which is worse
+    # than any install error that follows. Wait generously, clear whatever the
+    # uninstaller could not delete (it cannot remove its own exe while running),
+    # then let the installer report any real problem itself.
+    $deadline = (Get-Date).AddMinutes(15)
+    while ((Test-Path -LiteralPath $existing) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 5 }
+
+    if (Test-Path -LiteralPath $D) {
+        Write-Host "Clearing what the uninstaller left behind in $D ..."
+        Remove-Item -LiteralPath $D -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
