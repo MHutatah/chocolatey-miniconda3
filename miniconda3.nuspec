@@ -11,7 +11,7 @@
     <projectSourceUrl>https://github.com/conda/conda</projectSourceUrl>
     <docsUrl>https://www.anaconda.com/docs/getting-started/miniconda/install</docsUrl>
     <bugTrackerUrl>https://github.com/MHutatah/chocolatey-miniconda3/issues</bugTrackerUrl>
-    <iconUrl>https://cdn.jsdelivr.net/gh/MHutatah/chocolatey-miniconda3@master/icon.png</iconUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/MHutatah/chocolatey-miniconda3@11c68675bef05d680fc75a6d7dcdc2113bb95846/icon.png</iconUrl>
     <licenseUrl>https://github.com/conda/conda/blob/main/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <copyright>Copyright (c) Anaconda, Inc.</copyright>
