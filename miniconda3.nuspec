@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>miniconda3</id>
-    <version>26.7.1.1</version>
+    <version>26.9.3.0</version>
     <title>Miniconda (Python 3.13)</title>
     <authors>Anaconda, Inc.</authors>
     <owners>chaliy, Lite, MHutatah</owners>
