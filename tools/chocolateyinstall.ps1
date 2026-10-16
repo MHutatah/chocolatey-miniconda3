@@ -1,10 +1,12 @@
 $ErrorActionPreference = 'Stop'
 
+. (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Definition) 'Clear-InstallDir.ps1')
+
 $packageVersion = $env:chocolateyPackageVersion
 # Anaconda has published a 64-bit Windows installer only since 4.12.0, and there
 # is no native arm64 build, so arm64 runs this under x64 emulation.
-$url64 = 'https://repo.anaconda.com/miniconda/Miniconda3-py313_26.7.1-1-Windows-x86_64.exe'
-$checksum64 = 'ff485c617e0e15addc111aa1caa206679e214d223624297bf8aa0bc726ed67bd'
+$url64 = 'https://repo.anaconda.com/miniconda/Miniconda3-py313_26.9.3-0-Windows-x86_64.exe'
+$checksum64 = 'c6c0c668dafe83f8353a8ffbbdf9cdbeac26e2eb7980a34284c98d8b5d2b69ee'
 $ToolsDir = Get-ToolsLocation
 $pp = Get-PackageParameters
 
@@ -80,20 +82,16 @@ if (Test-Path -LiteralPath $existing) {
     Uninstall-ChocolateyPackage -PackageName 'miniconda3' -FileType 'exe' `
                                 -SilentArgs '/S' -File $existing -ValidExitCodes @(0)
 
-    # The NSIS uninstaller returns before the tree is actually gone, and on a
-    # large installation it keeps working for minutes afterwards.
-    #
     # Never throw past this point. The installation has already been removed, so
     # aborting here leaves the machine with no Miniconda at all, which is worse
-    # than any install error that follows. Wait generously, clear whatever the
-    # uninstaller could not delete (it cannot remove its own exe while running),
-    # then let the installer report any real problem itself.
-    $deadline = (Get-Date).AddMinutes(15)
-    while ((Test-Path -LiteralPath $existing) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 5 }
-
-    if (Test-Path -LiteralPath $D) {
-        Write-Host "Clearing what the uninstaller left behind in $D ..."
-        Remove-Item -LiteralPath $D -Recurse -Force -ErrorAction SilentlyContinue
+    # than any install error that follows. Clear-InstallDir waits out the
+    # uninstaller and reports instead of throwing, so the installer below always
+    # gets its turn and can report any real problem itself.
+    Write-Host "Waiting for the uninstaller to finish, then clearing $D ..."
+    if (-not (Clear-InstallDir -Path $D)) {
+        Write-Warning ("$D still exists after 15 minutes. Miniconda's installer refuses a " +
+                       "non-empty directory, so this upgrade will probably fail and leave no " +
+                       "Miniconda installed. Remove $D by hand, then re-run this upgrade.")
     }
 }
 

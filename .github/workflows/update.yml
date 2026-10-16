@@ -59,7 +59,18 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:CHOCO_API_KEY)) {
               throw "CHOCO_API_KEY repository secret is not set."
           }
-          $v = $env:MINICONDA_VERSION
+          # choco pack normalizes the version in the artifact name, so 26.9.3.0
+          # packs as miniconda3.26.9.3.nupkg and the feed knows it by that
+          # normalized number too. Rebuilding the name from the nuspec version is
+          # what broke the 2026-10-15 run ("Missing package artifact:
+          # miniconda3.26.9.3.0.nupkg"), so take the artifact and the feed version
+          # from the file that was actually produced.
+          $pkg = Get-ChildItem -Filter 'miniconda3.*.nupkg' |
+                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $pkg) { throw "No miniconda3.*.nupkg artifact found after packing." }
+          $nupkg = $pkg.Name
+          $v = $pkg.BaseName -replace '^miniconda3\.', ''
+          Write-Host "Artifact $nupkg (nuspec version $env:MINICONDA_VERSION, feed version $v)."
 
           # Exact id+version resolves versions the listing endpoints hide, including
           # ones still under moderation, so this answers "is it already published?"
@@ -91,9 +102,6 @@ jobs:
               Write-Host "Feed did not answer and this run changed nothing. Skipping."
               exit 0
           }
-
-          $nupkg = "miniconda3.$v.nupkg"
-          if (-not (Test-Path $nupkg)) { throw "Missing package artifact: $nupkg" }
 
           # push.chocolatey.org returns a transient 503 often enough to matter.
           Write-Host "Pushing $nupkg ..."
