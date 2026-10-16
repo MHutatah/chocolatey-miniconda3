@@ -20,7 +20,7 @@ index at:
 
 To verify, download the installer above and compare its hash:
 
-  PS> (Get-FileHash -Algorithm SHA256 .\Miniconda3-py313_26.7.1-1-Windows-x86_64.exe).Hash
+  PS> (Get-FileHash -Algorithm SHA256 .\Miniconda3-py313_26.9.3-0-Windows-x86_64.exe).Hash
 
 
 PYTHON SERIES

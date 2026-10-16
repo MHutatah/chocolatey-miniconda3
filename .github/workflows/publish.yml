@@ -23,7 +23,13 @@ jobs:
           Write-Host "Packing miniconda3 $v ..."
           choco pack miniconda3.nuspec --out .
           if ($LASTEXITCODE -ne 0) { throw "choco pack failed." }
-          Write-Host "Pushing miniconda3.$v.nupkg ..."
-          choco push "miniconda3.$v.nupkg" --source https://push.chocolatey.org/ --api-key $env:CHOCO_API_KEY
+          # choco pack normalizes the version in the artifact name (26.9.3.0 packs
+          # as miniconda3.26.9.3.nupkg), so glob for what was produced instead of
+          # rebuilding the name from the nuspec version.
+          $pkg = Get-ChildItem -Filter 'miniconda3.*.nupkg' |
+                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $pkg) { throw "No miniconda3.*.nupkg artifact found after packing." }
+          Write-Host "Pushing $($pkg.Name) ..."
+          choco push $pkg.Name --source https://push.chocolatey.org/ --api-key $env:CHOCO_API_KEY
           if ($LASTEXITCODE -ne 0) { throw "choco push failed." }
           Write-Host "Pushed miniconda3 $v. It now enters Chocolatey moderation."

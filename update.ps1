@@ -90,10 +90,6 @@ if ($ResolveOnly) { return $rel }   # returned, not formatted, so callers can as
 $nuspec  = [xml](Get-Content $nuspecPath -Raw)
 $current = $nuspec.package.metadata.version
 Write-Host "Current package version: $current   upstream latest ($PythonSeries): $($rel.Version)"
-if ([version]$rel.Version -le [version]$current) {
-    Write-Host "Already up to date; nothing to do."
-    return
-}
 
 # Parse the current URL + checksum from the install script so replacement is exact.
 $installText = Get-Content $installPath -Raw
@@ -101,9 +97,30 @@ $oldUrl = [regex]::Match($installText, "url64\s*=\s*'([^']+\.exe)'").Groups[1].V
 $oldSha = [regex]::Match($installText, "checksum64\s*=\s*'([0-9a-fA-F]{64})'").Groups[1].Value
 if (-not ($oldUrl -and $oldSha)) { throw "Could not parse the current URL/checksum from chocolateyinstall.ps1." }
 
+# Decide on the installer URL, not the version number. The version's last
+# component is upstream's build number, so a package-only fix release such as
+# 26.7.1.1 -> 26.7.1.2 occupies the number a real upstream build 2 would want.
+# Comparing versions would then read that build as a downgrade and skip it in
+# silence, which is the class of failure this package has already been bitten by.
+if ($rel.Url -eq $oldUrl) {
+    Write-Host "Already on the latest upstream build; nothing to do."
+    return
+}
+if ([version]$rel.Version -le [version]$current) {
+    throw ("Upstream build $($rel.Version) is not above the package version $current, so a " +
+           "package fix release has already taken that number. Set the version in " +
+           "miniconda3.nuspec by hand, then re-run.")
+}
+
+# VERIFICATION.txt also names the installer on its own, outside the URL, in the
+# Get-FileHash line a moderator is meant to run. Replacing only the full URL left
+# that line pointing at the previous release's filename.
+$oldFile = [System.IO.Path]::GetFileName($oldUrl)
+$newFile = [System.IO.Path]::GetFileName($rel.Url)
+
 foreach ($path in $installPath, $verifyPath) {
     $t = Get-Content $path -Raw
-    $t = $t.Replace($oldUrl, $rel.Url).Replace($oldSha, $rel.Sha256)
+    $t = $t.Replace($oldUrl, $rel.Url).Replace($oldSha, $rel.Sha256).Replace($oldFile, $newFile)
     Set-Content -Path $path -Value $t -Encoding Ascii -NoNewline
 }
 
