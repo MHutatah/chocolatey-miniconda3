@@ -59,18 +59,15 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:CHOCO_API_KEY)) {
               throw "CHOCO_API_KEY repository secret is not set."
           }
-          # choco pack normalizes the version in the artifact name, so 26.9.3.0
-          # packs as miniconda3.26.9.3.nupkg and the feed knows it by that
-          # normalized number too. Rebuilding the name from the nuspec version is
-          # what broke the 2026-10-15 run ("Missing package artifact:
-          # miniconda3.26.9.3.0.nupkg"), so take the artifact and the feed version
-          # from the file that was actually produced.
-          $pkg = Get-ChildItem -Filter 'miniconda3.*.nupkg' |
-                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if (-not $pkg) { throw "No miniconda3.*.nupkg artifact found after packing." }
-          $nupkg = $pkg.Name
-          $v = $pkg.BaseName -replace '^miniconda3\.', ''
-          Write-Host "Artifact $nupkg (nuspec version $env:MINICONDA_VERSION, feed version $v)."
+          # NuGet drops a zero revision, so the nuspec version 26.9.3.0 is 26.9.3
+          # both in the artifact name and on the feed. Derive it from the nuspec
+          # version rather than from the packed file: update.ps1 packs only when a
+          # new upstream build appears, so on a quiet day there is no artifact and
+          # this step still has to ask the feed about the current version. Taking it
+          # from the artifact is what failed the 2026-10-16 and 2026-10-17 runs.
+          . ./build/Get-FeedVersion.ps1
+          $v = Get-FeedVersion -NuspecVersion $env:MINICONDA_VERSION
+          Write-Host "nuspec version $env:MINICONDA_VERSION, feed version $v."
 
           # Exact id+version resolves versions the listing endpoints hide, including
           # ones still under moderation, so this answers "is it already published?"
@@ -102,6 +99,18 @@ jobs:
               Write-Host "Feed did not answer and this run changed nothing. Skipping."
               exit 0
           }
+
+          # Only now is an artifact genuinely required: the feed does not have $v
+          # and this run is expected to supply it.
+          $pkg = Get-ChildItem -Filter 'miniconda3.*.nupkg' |
+                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $pkg) {
+              throw ("The feed does not have miniconda3 $v, but no miniconda3.*.nupkg was built " +
+                     "for it. update.ps1 packs only when the upstream installer URL changes, so " +
+                     "either the nuspec version was bumped by hand without packing, or a push was " +
+                     "lost. Run the 'Publish current version' workflow to pack and push $v.")
+          }
+          $nupkg = $pkg.Name
 
           # push.chocolatey.org returns a transient 503 often enough to matter.
           Write-Host "Pushing $nupkg ..."
