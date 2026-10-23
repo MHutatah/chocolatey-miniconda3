@@ -77,3 +77,4 @@ if ($fails) {
 }
 Write-Host ''
 Write-Host 'All checks passed.'
+exit 0
