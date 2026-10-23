@@ -52,3 +52,4 @@ Check "-PythonSeries $alt resolves that series" ($other.Url -like "*_$alt`_*" -o
 
 if ($fail) { throw "$fail check(s) failed." }
 "`nAll checks passed."
+exit 0

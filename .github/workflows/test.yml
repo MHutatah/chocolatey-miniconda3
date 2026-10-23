@@ -1,0 +1,22 @@
+name: Test
+
+# Pure unit checks only. Test-ResolveRelease.ps1 hits repo.anaconda.com, so it
+# runs in update.yml where the network is already required, not here.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run package tests
+        shell: pwsh
+        run: |
+          ./tools/Test-ClearInstallDir.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          ./build/Test-GetFeedVersion.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
