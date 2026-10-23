@@ -20,6 +20,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Run package tests
+        shell: pwsh
+        run: |
+          ./tools/Test-ClearInstallDir.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          ./tools/Test-ResolveRelease.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          ./build/Test-GetFeedVersion.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
       - name: Update and pack if a new version exists
         id: update
         shell: pwsh

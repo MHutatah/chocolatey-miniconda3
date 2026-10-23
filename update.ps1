@@ -43,6 +43,13 @@ function Save-XmlNoBom([xml]$Xml, [string]$Path) {
 
     $writer = [System.Xml.XmlWriter]::Create($Path, $settings)
     try { $Xml.Save($writer) } finally { $writer.Close() }
+
+    # XmlWriter closes without a line terminator, which makes every bump show a
+    # "\ No newline at end of file" diff. Put it back.
+    $text = [IO.File]::ReadAllText($Path)
+    if (-not $text.EndsWith("`n")) {
+        [IO.File]::WriteAllText($Path, $text + "`r`n", (New-Object System.Text.UTF8Encoding($false)))
+    }
 }
 
 function Resolve-MinicondaRelease {
