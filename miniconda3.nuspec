@@ -41,6 +41,16 @@ You can provide parameters for the install. Example: `choco install miniconda3 -
 
 **Upgrading replaces the installation.** Miniconda's installer will not write over an existing one, so an upgrade removes it first. If the installation directory contains conda environments they would go with it, so the upgrade stops and lists them instead. Export or move those environments, or pass `/Force` to upgrade anyway. Environments kept outside the installation directory are unaffected.
 
+**Anaconda Terms of Service.** Conda 26.x requires each user to accept Anaconda's Terms of Service for the `defaults` channels once after installing. Until accepted, `conda create`, `conda install`, and `conda update` fail with `CondaToSNonInteractiveError`. Run these three commands once:
+
+```
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/msys2
+```
+
+This is Anaconda's requirement, not the package's. It does not apply to installs that use only conda-forge.
+
 This package tracks the Python 3.13 series. Anaconda publishes a separate Windows installer per Python series, so the package follows one deliberately rather than whichever was built most recently. Windows builds are 64-bit only; 32-bit was dropped upstream after 4.12.0.
     </description>
     <tags>conda anaconda miniconda python miniconda3</tags>
