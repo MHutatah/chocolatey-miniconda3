@@ -5,8 +5,8 @@ $ErrorActionPreference = 'Stop'
 $packageVersion = $env:chocolateyPackageVersion
 # Anaconda has published a 64-bit Windows installer only since 4.12.0, and there
 # is no native arm64 build, so arm64 runs this under x64 emulation.
-$url64 = 'https://repo.anaconda.com/miniconda/Miniconda3-py313_26.9.4-0-Windows-x86_64.exe'
-$checksum64 = 'b928c6b4d7157b1ebc493fd16605ad1097a598224abe03cec22256983c0df9e9'
+$url64 = 'https://repo.anaconda.com/miniconda/Miniconda3-py313_26.9.4-1-Windows-x86_64.exe'
+$checksum64 = '241d7b76110b12d122087d395f2f1f12148a34df0710ae24b25d526dfeb9ecb6'
 $ToolsDir = Get-ToolsLocation
 $pp = Get-PackageParameters
 
